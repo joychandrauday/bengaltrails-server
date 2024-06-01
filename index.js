@@ -31,6 +31,7 @@ async function run() {
     const guidesCollection = client.db("bengalTrails").collection("guides");
     const packageCollection = client.db("bengalTrails").collection("packages");
     const typeCollection = client.db("bengalTrails").collection("tourTypes");
+    const travelStoriesCollection = client.db("bengalTrails").collection("travelStories");
     // collections in database
 
     // jwt api
@@ -51,6 +52,11 @@ async function run() {
     });
     app.get("/tourTypes", async (req, res) => {
       const cursor = typeCollection.find();
+      const result = await cursor.toArray();
+      res.send(result);
+    });
+    app.get("/travelStories", async (req, res) => {
+      const cursor = travelStoriesCollection.find();
       const result = await cursor.toArray();
       res.send(result);
     });
