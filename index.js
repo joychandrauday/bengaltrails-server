@@ -50,11 +50,7 @@ async function run() {
       const result = await cursor.toArray();
       res.send(result);
     });
-    app.get("/tourTypes", async (req, res) => {
-      const cursor = typeCollection.find();
-      const result = await cursor.toArray();
-      res.send(result);
-    });
+    
     app.get("/travelStories", async (req, res) => {
       const cursor = travelStoriesCollection.find();
       const result = await cursor.toArray();
@@ -67,6 +63,22 @@ async function run() {
       res.send(result);
     });
 
+    app.get("/tourTypes", async (req, res) => {
+      const cursor = typeCollection.find();
+      const result = await cursor.toArray();
+      res.send(result);
+    });
+    app.get("/tourType/:name", async (req, res) => {
+      try {
+        const type = req.params.name;
+        const query = { tourType: type };
+        const result = await packageCollection.find(query).toArray();
+        res.send(result);
+      } catch (error) {
+        console.error(error);
+        res.status(500).send("Internal Server Error");
+      }
+    });
     // app.get("/book/:id", async (req, res) => {
     //   const id = req.params.id;
     //   const query = { _id: new ObjectId(id) };
@@ -74,23 +86,6 @@ async function run() {
     //   res.send(result);
     // });
 
-    // app.get("/genre", async (req, res) => {
-    //   const cursor = genreCollection.find();
-    //   const result = await cursor.toArray();
-    //   res.send(result);
-    // });
-
-    // app.get("/genre/:name", async (req, res) => {
-    //   try {
-    //     const genreName = req.params.name;
-    //     const query = { genre: genreName };
-    //     const result = await bookCollection.find(query).toArray();
-    //     res.send(result);
-    //   } catch (error) {
-    //     console.error(error);
-    //     res.status(500).send("Internal Server Error");
-    //   }
-    // });
 
     // app.post("/allbooks", async (req, res) => {
     //   const newBook = req.body;
