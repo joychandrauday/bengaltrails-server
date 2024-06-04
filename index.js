@@ -32,6 +32,7 @@ async function run() {
     const packageCollection = client.db("bengalTrails").collection("packages");
     const typeCollection = client.db("bengalTrails").collection("tourTypes");
     const travelStoriesCollection = client.db("bengalTrails").collection("travelStories");
+    const bookingCollection = client.db("bengalTrails").collection("bookings");
     // collections in database
 
     // jwt api
@@ -43,6 +44,12 @@ async function run() {
     app.get("/guides", async (req, res) => {
       const cursor = guidesCollection.find();
       const result = await cursor.toArray();
+      res.send(result);
+    });
+    app.get("/guide/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await guidesCollection.findOne(query);
       res.send(result);
     });
     app.get("/packages", async (req, res) => {
@@ -79,6 +86,7 @@ async function run() {
         res.status(500).send("Internal Server Error");
       }
     });
+    
     app.get("/package/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
@@ -86,6 +94,11 @@ async function run() {
       res.send(result);
     });
 
+    app.post("/bookings", async (req, res) => {
+      const booking = req.body;
+      const result = await bookingBookCollection.insertOne(booking);
+      res.send(result);
+    });
 
     // app.post("/allbooks", async (req, res) => {
     //   const newBook = req.body;
