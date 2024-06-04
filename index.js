@@ -33,6 +33,7 @@ async function run() {
     const typeCollection = client.db("bengalTrails").collection("tourTypes");
     const travelStoriesCollection = client.db("bengalTrails").collection("travelStories");
     const bookingCollection = client.db("bengalTrails").collection("bookings");
+    const usersCollection = client.db("bengalTrails").collection("users");
     // collections in database
 
     // jwt api
@@ -46,18 +47,49 @@ async function run() {
       const result = await cursor.toArray();
       res.send(result);
     });
+    
     app.get("/guide/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
-      const result = await guidesCollection.findOne(query);
-      res.send(result);
+      const guide = await guidesCollection.findOne(query);
+      if (!guide) {
+        return res.status(404).json({ message: "Guide not found" });
+      }
+      // Calculate average rating
+      const reviews = guide.reviews || [];
+      const totalRating = reviews.reduce((acc, review) => acc + review.rating, 0);
+      const averageRating = reviews.length > 0 ? totalRating / reviews.length : 0;
+      res.json({ ...guide, averageRating, reviews });
+    });
+
+    app.post("/guide/:id/reviews", async (req, res) => {
+      const id = req.params.id;
+      const { rating, review, userName, userImage } = req.body;
+      try {
+        const query = { _id: new ObjectId(id) };
+        const guide = await guidesCollection.findOne(query);
+        if (!guide) {
+          return res.status(404).json({ message: "Guide not found" });
+        }
+        await guidesCollection.updateOne(query, { 
+          $push: { reviews: { rating, review, userName, userImage, _id: new ObjectId() } }
+        });
+        res.json({ success: true });
+      } catch (error) {
+        console.error("Error submitting review:", error);
+        res.status(500).json({ error: "An error occurred while submitting the review" });
+      }
     });
     app.get("/packages", async (req, res) => {
       const cursor = packageCollection.find();
       const result = await cursor.toArray();
       res.send(result);
     });
-    
+    app.post("/packages", async (req, res) => {
+      const package = req.body;
+      const result = await packageCollection.insertOne(package);
+      res.send(result);
+    });
     app.get("/travelStories", async (req, res) => {
       const cursor = travelStoriesCollection.find();
       const result = await cursor.toArray();
@@ -99,7 +131,36 @@ async function run() {
       const result = await bookingCollection.insertOne(booking);
       res.send(result);
     });
-
+    app.post("/users", async (req, res) => {
+      const user = req.body;
+      const result = await usersCollection.insertOne(user);
+      res.send(result);
+    });
+    app.get("/users", async (req, res) => {
+      const cursor = usersCollection.find();
+      const result = await cursor.toArray();
+      res.send(result);
+    });
+    app.get("/users/admin/:email", async (req, res) => {
+      const email = req.params.email;
+      // if (email !== req.decoded.email) {
+      //   return res.status(403).send({ message: "Unauthorized access" });
+      // }
+      const query = { email: email };
+      const user = await usersCollection.findOne(query);
+      const admin = user?.role === "admin";
+      res.send({ admin });
+    });
+    app.get("/users/guide/:email", async (req, res) => {
+      const email = req.params.email;
+      // if (email !== req.decoded.email) {
+      //   return res.status(403).send({ message: "Unauthorized access" });
+      // }
+      const query = { email: email };
+      const user = await usersCollection.findOne(query);
+      const guide = user?.role === "guide";
+      res.send({ guide });
+    });
     // app.post("/allbooks", async (req, res) => {
     //   const newBook = req.body;
     //   const result = await bookCollection.insertOne(newBook);
