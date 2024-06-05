@@ -7,7 +7,11 @@ const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
 app.use(
   cors({
-    origin: ["http://localhost:5173", "https://bookersden.netlify.app","https://bookersdenfinalvariation.web.app"],
+    origin: [
+      "http://localhost:5173",
+      "https://bookersden.netlify.app",
+      "https://bookersdenfinalvariation.web.app",
+    ],
     credentials: true,
   })
 );
@@ -31,13 +35,15 @@ async function run() {
     const guidesCollection = client.db("bengalTrails").collection("guides");
     const packageCollection = client.db("bengalTrails").collection("packages");
     const typeCollection = client.db("bengalTrails").collection("tourTypes");
-    const travelStoriesCollection = client.db("bengalTrails").collection("travelStories");
+    const travelStoriesCollection = client
+      .db("bengalTrails")
+      .collection("travelStories");
     const bookingCollection = client.db("bengalTrails").collection("bookings");
     const usersCollection = client.db("bengalTrails").collection("users");
+    const bucketCollection = client.db("bengalTrails").collection("bucketList");
     // collections in database
 
     // jwt api
-    
 
     // jwt api
 
@@ -47,7 +53,7 @@ async function run() {
       const result = await cursor.toArray();
       res.send(result);
     });
-    
+
     app.get("/guide/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
@@ -57,8 +63,12 @@ async function run() {
       }
       // Calculate average rating
       const reviews = guide.reviews || [];
-      const totalRating = reviews.reduce((acc, review) => acc + review.rating, 0);
-      const averageRating = reviews.length > 0 ? totalRating / reviews.length : 0;
+      const totalRating = reviews.reduce(
+        (acc, review) => acc + review.rating,
+        0
+      );
+      const averageRating =
+        reviews.length > 0 ? totalRating / reviews.length : 0;
       res.json({ ...guide, averageRating, reviews });
     });
 
@@ -71,13 +81,23 @@ async function run() {
         if (!guide) {
           return res.status(404).json({ message: "Guide not found" });
         }
-        await guidesCollection.updateOne(query, { 
-          $push: { reviews: { rating, review, userName, userImage, _id: new ObjectId() } }
+        await guidesCollection.updateOne(query, {
+          $push: {
+            reviews: {
+              rating,
+              review,
+              userName,
+              userImage,
+              _id: new ObjectId(),
+            },
+          },
         });
         res.json({ success: true });
       } catch (error) {
         console.error("Error submitting review:", error);
-        res.status(500).json({ error: "An error occurred while submitting the review" });
+        res
+          .status(500)
+          .json({ error: "An error occurred while submitting the review" });
       }
     });
     app.get("/packages", async (req, res) => {
@@ -88,6 +108,36 @@ async function run() {
     app.post("/packages", async (req, res) => {
       const package = req.body;
       const result = await packageCollection.insertOne(package);
+      res.send(result);
+    });
+    app.get("/package/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await packageCollection.findOne(query);
+      res.send(result);
+    });
+    app.get("/bucket-list", async (req, res) => {
+      const cursor = bucketCollection.find();
+      const result = await cursor.toArray();
+      res.send(result);
+    });
+    app.post("/bucket-list", async (req, res) => {
+      const bucket = req.body;
+      const result = await bucketCollection.insertOne(bucket);
+      res.send(result);
+    });
+    app.get("/bucket-lists", async (req, res) => {
+      let query = {};
+      if (req.query?.email) {
+        query = { email: req.query?.email };
+      }
+      const result = await bucketCollection.find(query).toArray();
+      res.send(result);
+    });
+    app.delete("/bucket-lists/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await bucketCollection.deleteOne(query);
       res.send(result);
     });
     app.get("/travelStories", async (req, res) => {
@@ -118,7 +168,19 @@ async function run() {
         res.status(500).send("Internal Server Error");
       }
     });
-    
+    app.get("/bookings", async (req, res) => {
+      const cursor = bookingCollection.find();
+      const result = await cursor.toArray();
+      res.send(result);
+    });
+    app.get("/booking", async (req, res) => {
+      let query = {};
+      if (req.query?.email) {
+        query = { touristEmail: req.query?.email };
+      }
+      const result = await bookingCollection.find(query).toArray();
+      res.send(result);
+    });
     app.get("/package/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
@@ -213,7 +275,7 @@ async function run() {
     //   }else{
     //     return res.status(403).send({message:'forbidden access.'})
     //   }
-      
+
     // });
 
     // app.post("/borrowed-books", async (req, res) => {
