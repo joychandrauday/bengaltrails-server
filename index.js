@@ -203,6 +203,26 @@ async function run() {
       const result = await cursor.toArray();
       res.send(result);
     });
+    app.get("/users/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await usersCollection.findOne(query);
+      res.send(result);
+    });
+    app.delete("/users/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await usersCollection.deleteOne(query);
+      res.send(result);
+    });
+    app.get("/user", async (req, res) => {
+      let query = {};
+      if (req.query?.email) {
+        query = { email: req.query?.email };
+      }
+      const result = await usersCollection.findOne(query);
+      res.send(result);
+    });
     app.get("/users/admin/:email", async (req, res) => {
       const email = req.params.email;
       // if (email !== req.decoded.email) {
@@ -223,6 +243,33 @@ async function run() {
       const guide = user?.role === "guide";
       res.send({ guide });
     });
+    app.get("/reqGuide", async (req, res) => {
+      // const email = req.params.email;
+      // if (email !== req.decoded.email) {
+      //   return res.status(403).send({ message: "Unauthorized access" });
+      // }
+      const query = { reqGuide: true };
+      const users = await usersCollection.find(query).toArray();
+      // const guide = user?.role === "guide";
+      res.send(users);
+    });
+    //guide request
+    app.patch("/users/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const { role, guide } = req.body;
+
+      const updateDoc = {
+        $set: {
+          role,
+          guide,
+        },
+      };
+      const result = await usersCollection.updateOne(query, updateDoc);
+      res.send(result);
+    });
+    //guide request
+
     // app.post("/allbooks", async (req, res) => {
     //   const newBook = req.body;
     //   const result = await bookCollection.insertOne(newBook);
