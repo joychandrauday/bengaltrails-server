@@ -45,8 +45,30 @@ async function run() {
     // collections in database
 
     // jwt api
-
+    app.post('/jwt',async (req,res)=>{
+      const user=req.body;
+      const token=jwt.sign(user,process.env.ACCESS_TOKEN_SECRET,{expiresIn:'1h'});
+      res.send({token});
+    })
     // jwt api
+    //varify token
+    const varifyToken=(req,res,next)=>{
+      console.log('inside varifyToken',req.headers.authorization);
+      if (!req.headers.authorization) {
+        return res.status(401).semd({message: 'forbidden access.'})
+      }
+      const token=req.headers.authorization.split(' ')[1]
+      jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function(err, decoded) {
+        if (err) {
+          return res.status(401).semd({message: 'forbidden access.'})
+        }
+        req.decoded =decoded;
+        next()
+      });
+    }
+    //varify token
+
+
 
     // guide apis
     app.get("/guides", async (req, res) => {
@@ -232,6 +254,12 @@ async function run() {
     //bookings
 
     //users
+    app.get("/users",varifyToken, async (req, res) => {
+      const cursor = usersCollection.find();
+      const result = await cursor.toArray();
+      res.send(result);
+    });
+
     app.post("/users", async (req, res) => {
       const user = req.body;
       const query = { email: user.email };
@@ -240,11 +268,6 @@ async function run() {
         return;
       }
       const result = await usersCollection.insertOne(user);
-      res.send(result);
-    });
-    app.get("/users", async (req, res) => {
-      const cursor = usersCollection.find();
-      const result = await cursor.toArray();
       res.send(result);
     });
     app.get("/users/:id", async (req, res) => {
