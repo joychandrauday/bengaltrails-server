@@ -193,6 +193,25 @@ async function run() {
       const result = await bookingCollection.insertOne(booking);
       res.send(result);
     });
+    app.delete("/bookings/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await bookingCollection.deleteOne(query);
+      res.send(result);
+    });
+    app.patch("/bookings/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const { status } = req.body;
+      // const result=await bookingCollection.deleteOne(query)
+      const updateDoc = {
+        $set: {
+          status,
+        },
+      };
+      const result = await bookingCollection.updateOne(query, updateDoc);
+      res.send(result);
+    });
     app.post("/users", async (req, res) => {
       const user = req.body;
       const result = await usersCollection.insertOne(user);
@@ -241,7 +260,7 @@ async function run() {
       const query = { email: email };
       const user = await usersCollection.findOne(query);
       const guide = user?.role === "guide";
-      res.send({ guide });
+      res.send({ guide, email });
     });
     app.get("/reqGuide", async (req, res) => {
       // const email = req.params.email;
@@ -257,19 +276,27 @@ async function run() {
     app.patch("/users/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
-      const { role, guide } = req.body;
+      const { role, guide, reqGuide } = req.body;
 
       const updateDoc = {
         $set: {
           role,
           guide,
+          reqGuide,
         },
       };
       const result = await usersCollection.updateOne(query, updateDoc);
       res.send(result);
     });
     //guide request
-
+    //assigned tour
+    app.get("/booking-by-guide/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { guideEmail: email };
+      const result = await bookingCollection.find(query).toArray();
+      res.send(result);
+    });
+    //assigned tour
     // app.post("/allbooks", async (req, res) => {
     //   const newBook = req.body;
     //   const result = await bookCollection.insertOne(newBook);
