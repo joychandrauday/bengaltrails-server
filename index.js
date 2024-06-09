@@ -1,6 +1,6 @@
 require("dotenv").config();
 const express = require("express");
-const jwt = require('jsonwebtoken');
+const jwt = require("jsonwebtoken");
 const cors = require("cors");
 const app = express();
 const port = process.env.PORT || 5000;
@@ -45,35 +45,78 @@ async function run() {
     // collections in database
 
     // jwt api
-    app.post('/jwt',async (req,res)=>{
-      const user=req.body;
-      const token=jwt.sign(user,process.env.ACCESS_TOKEN_SECRET,{expiresIn:'1h'});
-      res.send({token});
-    })
+    app.post("/jwt", async (req, res) => {
+      const user = req.body;
+      const token = jwt.sign( user, process.env.ACCESS_TOKEN_SECRET, {
+        expiresIn: "1h",
+      });
+      res.send({ token });
+    });
     // jwt api
     //varify token
-    const varifyToken=(req,res,next)=>{
-      console.log('inside varifyToken',req.headers.authorization);
+    const varifyToken = (req, res, next) => {
       if (!req.headers.authorization) {
-        return res.status(401).send({message: 'forbidden access.'})
+        return res.status(401).send({ message: "forbidden access." });
       }
-      const token=req.headers.authorization.split(' ')[1]
-      jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function(err, decoded) {
-        if (err) {
-          return res.status(401).send({message: 'forbidden access.'})
+      const token = req.headers.authorization.split(" ")[1];
+      jwt.verify(
+        token,
+        process.env.ACCESS_TOKEN_SECRET,
+        function (err, decoded) {
+          if (err) {
+            return res.status(401).send({ message: "forbidden access." });
+          }
+          req.decoded = decoded;
+          next();
         }
-        req.decoded =decoded;
-        next()
-      });
-    }
+      );
+    };
     //varify token
-
-
 
     // guide apis
     app.get("/guides", async (req, res) => {
       const cursor = guidesCollection.find();
       const result = await cursor.toArray();
+      res.send(result);
+    });
+    app.post("/users", async (req, res) => {
+      const user = req.body;
+      const query = { email: user.email };
+      const existingUser = await usersCollection.findOne(query);
+      if (existingUser) {
+        return;
+      }
+      const result = await usersCollection.insertOne(user);
+      res.send(result);
+    });
+    app.post("/guides", async (req, res) => {
+      const user = req.body;
+      const result = await guidesCollection.insertOne(user);
+      res.send(result);
+    });
+    app.patch("/guides/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const updateFields = req.body;
+      try {
+        const result = await guidesCollection.updateOne(query, { $set: updateFields });
+    
+        if (result.modifiedCount === 1) {
+          res.status(200).json({ message: "Guide details updated successfully" });
+        } else {
+          res.status(404).json({ message: "Guide not found" });
+        }
+      } catch (error) {
+        console.error("Error updating guide details:", error);
+        res.status(500).json({ error: "An error occurred while updating guide details" });
+      }
+    });
+    app.get("/guide", async (req, res) => {
+      let query = {};
+      if (req.query?.email) {
+        query = { guideEmail: req.query?.email };
+      }
+      const result = await guidesCollection.findOne(query);
       res.send(result);
     });
 
@@ -178,7 +221,6 @@ async function run() {
     });
     //bucketList
 
-
     //blogs
     app.get("/travelStories", async (req, res) => {
       const cursor = travelStoriesCollection.find();
@@ -192,7 +234,7 @@ async function run() {
       res.send(result);
     });
     //blogs
-    
+
     //tourtypes
     app.get("/tourTypes", async (req, res) => {
       const cursor = typeCollection.find();
@@ -226,7 +268,7 @@ async function run() {
       const result = await bookingCollection.find(query).toArray();
       res.send(result);
     });
-    
+
     app.post("/bookings", async (req, res) => {
       const booking = req.body;
       const result = await bookingCollection.insertOne(booking);
@@ -254,7 +296,7 @@ async function run() {
     //bookings
 
     //users
-    app.get("/all-users",varifyToken, async (req, res) => {
+    app.get("/all-users", varifyToken, async (req, res) => {
       const cursor = usersCollection.find();
       const result = await cursor.toArray();
       res.send(result);
@@ -293,13 +335,13 @@ async function run() {
     //users
 
     //userHooks
-    app.get("/users/admin/:email",varifyToken, async (req, res) => {
+    app.get("/users/admin/:email", varifyToken, async (req, res) => {
       const email = req.params.email;
       // if (email !== req.decoded.email) {
       //   return res.status(403).send({ message: "Unauthorized access" });
       // }
       if (email !== req.decoded.email) {
-        return res.status(403).send({message: 'unauthoirized access.'})
+        return res.status(403).send({ message: "unauthoirized access." });
       }
       const query = { email: email };
       const user = await usersCollection.findOne(query);
@@ -327,7 +369,7 @@ async function run() {
       res.send(users);
     });
     //userHooks
-    
+
     //guide request
     app.patch("/users/:id", async (req, res) => {
       const id = req.params.id;
@@ -353,9 +395,20 @@ async function run() {
       const result = await bookingCollection.find(query).toArray();
       res.send(result);
     });
+    app.get("/booking/count", async (req, res) => {
+      try {
+        const { email } = req.query;
+
+        // Query the database to count the bookings for the specified user
+        const count = await Booking.countDocuments({ touristEmail: email });
+
+        res.json({ count });
+      } catch (error) {
+        console.error("Error fetching booking count:", error);
+        res.status(500).json({ error: "Internal Server Error" });
+      }
+    });
     //assigned tour
-
-
 
     // app.post("/allbooks", async (req, res) => {
     //   const newBook = req.body;
