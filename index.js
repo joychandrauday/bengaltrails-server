@@ -7,16 +7,16 @@ const port = process.env.PORT || 5000;
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
 
-const allowedOrigins = ['https://bengaltrails.web.app'];
-app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  }
-}));
+const allowedOrigins = [];
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173",
+      'https://bengaltrails.web.app',
+      "https://cardoctor-bd.firebaseapp.com",
+    ]
+  })
+);
 app.use(express.json());
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.nsswhi9.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
@@ -49,7 +49,7 @@ async function run() {
     app.post("/jwt", async (req, res) => {
       const user = req.body;
       const token = jwt.sign( user, process.env.ACCESS_TOKEN_SECRET, {
-        expiresIn: "1h",
+        expiresIn: "1h"
       });
       res.send({ token });
     });
@@ -232,6 +232,11 @@ async function run() {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await travelStoriesCollection.findOne(query);
+      res.send(result);
+    });
+    app.post("/story", async (req, res) => {
+      const story = req.body;
+      const result = await travelStoriesCollection.insertOne(story);
       res.send(result);
     });
     //blogs
